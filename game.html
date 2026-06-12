@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numpuz Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #d4a370; /* Wood-like background color */
+            font-family: 'Courier New', Courier, monospace; /* Vintage font */
+            margin: 0;
+            background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png'); /* Wood texture */
+            position: relative;
+        }
+        .container {
+            text-align: center;
+            background-color: #f4e1c1; /* Light wooden color for container */
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        h1 {
+            color: #5d3a00; /* Dark wood color for title */
+        }
+        label, p {
+            font-size: 20px;
+            color: #5d3a00;
+        }
+        button {
+            background-color: #8e5b3b; /* Wooden button color */
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #5c3a2e;
+        }
+        .grid {
+            display: grid;
+            gap: 5px;
+            margin: 20px auto;
+        }
+        .tile {
+            background-color: #b57f52; /* Brown color for tiles */
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-weight: bold;
+            border: 2px solid #8e5b3b; /* Dark border around each tile */
+            border-radius: 8px;
+            box-shadow: inset 0px 0px 5px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            width: 100px;
+            height: 100px;
+        }
+        .tile:hover {
+            background-color: #9e6d46; /* Slightly lighter brown on hover */
+        }
+        .empty {
+            background-color: transparent;
+            cursor: default;
+        }
+        /* Disable hover effect for the empty tile */
+        .empty:hover {
+            background-color: transparent;
+        }
+        .locked {
+            background-color: #8b8b8b;
+            cursor: not-allowed;
+        }
+        #introPage {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+        }
+        #gamePage {
+            display: none;
+        }
+
+        /* Flexbox for timer and move counter alignment */
+        .top-bar {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            color: #5d3a00;
+            font-weight: bold;
+        }
+
+        #moveCounterDisplay {
+            margin-right: 20px;
+        }
+
+        /* Sound buttons container */
+        .sound-buttons {
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            display: none; /* Initially hidden */
+            flex-direction: column;
+        }
+
+        .sound-buttons button {
+            background-color: #6b3b25;
+            padding: 10px;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        /* Settings button to toggle sound options */
+        .settings-button {
+            position: absolute;
+            top: 3px;
+            right: 5px; /* Positioned next to the timer */
+            background-color: #6b3b25;
+            padding: 5px;
+            font-size: 12px;  /* Smaller size for the settings button */
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        audio {
+            display: none;
+        }
+
+        /* Moves counter position below the timer */
+        .moves-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: absolute;
+            top: 40px;
+            left: 10px;
+        }
+
+        /* Modal Background */
+.level-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+/* Modal Content */
+.level-modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    width: 300px;
+}
+
+.locked {
+    background-color: #8b8b8b;
+    cursor: not-allowed;
+    color: gray;
+}
+
+
+    </style>
+</head>
+<body>
+    <audio id="backgroundMusic" loop>
+        <source src="sounds/background.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Sliding sound -->
+    <audio id="slideSound" preload="auto">
+        <source src="sounds/slide.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
+    <audio id="clickSound" preload="auto">
+    <source src="sounds/click.wav" type="audio/mp3">
+</audio>
+
+
+    <!-- Intro Page -->
+    <div class="container" id="introPage">
+        <h1>Welcome to Numpuz Game</h1>
+        <p>Click "Start" to begin or "Resume" to continue your previous game.</p>
+        <button id="startButton" onclick="startGame()">Start</button>
+        <button id="resumeButton" onclick="resumeGame()">Resume</button>
+
+    </div>
+    
+    <!-- Game Page -->
+    <div class="container" id="gamePage">
+        <h1>Numpuz Game</h1>
+        
+        
+        <!-- Top bar with Timer and Move Counter -->
+        <div class="top-bar">
+    <div id="moveCounterDisplay">Moves: 0</div>
+    <div id="timerDisplay">00:00</div>
+</div>
+
+
+        <div class="grid" id="grid"></div>
+        <button id="shuffleButton" onclick="shuffleTiles()">Shuffle</button>
+
+        <!-- Sound control buttons -->
+        <div class="sound-buttons">
+
+    <button id="selectLevelButton" onclick="openLevelModal()">Your Level</button>
+    <!-- Level selection modal (small page) -->
+<div id="levelModal" class="level-modal">
+    <div class="level-modal-content">
+        <h2>Your Level</h2>
+        <div id="levelButtons"></div> <!-- Level buttons will be added here -->
+        <button id="closeButton" onclick="closeLevelModal()">Close</button>
+    </div>
+</div>
+
+
+    
+    <button id="muteMusicButton" onclick="toggleBackgroundMusic()">Mute Music</button>
+    <button id="muteSoundButton" onclick="toggleSlideSound()">Mute Sound</button>
+</div>
+
+
+        <!-- Settings button to toggle sound options -->
+        <button id="settingsIcon" class="settings-button" onclick="toggleSoundOptions()">⚙️</button>
+    </div>
+
+    <script>
+    // Toggle sound options visibility
+    function toggleSoundOptions() {
+        const soundButtons = document.querySelector(".sound-buttons");
+        const settingsButton = document.querySelector(".settings-button");
+
+        // Toggle the display of sound buttons
+        soundButtons.style.display = soundButtons.style.display === "none" ? "flex" : "none";
+
+        // Hide the settings if clicked outside
+        document.addEventListener("click", function(event) {
+            // Check if the click is outside the settings options
+            if (!soundButtons.contains(event.target) && event.target !== settingsButton) {
+                soundButtons.style.display = "none";
+            }
+        });
+    }
+
+    function getGridSize(level) {
+        if (level === 1) return 3;  // Level 1 → 3x3 Grid
+        if (level === 2) return 4;  // Level 2 → 4x4 Grid
+        return 5;                   // Level 3-10 → 5x5 Grid
+    }
+
+   // Open the level selection modal
+function openLevelModal() {
+    createLevelButtons(); // Create the buttons dynamically
+    document.getElementById("levelModal").style.display = "block";
+}
+
+// Close the level selection modal
+function closeLevelModal() {
+    document.getElementById("levelModal").style.display = "none";
+}
+
+// Create level buttons dynamically with lock icons
+function createLevelButtons() {
+    const levelButtonsContainer = document.getElementById("levelButtons");
+    levelButtonsContainer.innerHTML = ''; // Clear previous buttons
+
+    for (let i = 1; i <= 10; i++) { // Assuming 10 levels
+        const levelButton = document.createElement("button");
+        levelButton.innerText = `Level ${i}`;
+        
+        if (i > unlockedLevels) {
+            levelButton.disabled = true;
+            levelButton.classList.add("locked");
+            levelButton.innerHTML += " 🔒"; // Add lock icon
+        } else {
+            levelButton.onclick = () => selectLevel(i);
+        }
+        
+        levelButtonsContainer.appendChild(levelButton);
+    }
+}
+
+    // Other existing functions remain unchanged
+    const backgroundMusic = document.getElementById("backgroundMusic");
+    const slideSound = document.getElementById("slideSound");
+
+    // Ensure user interaction enables the audio
+    document.addEventListener("click", () => {
+        backgroundMusic.play();
+    }, { once: true });
+
+    const grid = document.getElementById("grid");
+    const levelSelect = document.getElementById("level");
+    const introPage = document.getElementById("introPage");
+    const gamePage = document.getElementById("gamePage");
+    const timerDisplay = document.getElementById("timerDisplay");
+    const moveCounterDisplay = document.getElementById("moveCounterDisplay");
+
+    let tiles = [];
+    let size = 3;
+    let unlockedLevels = 1;
+    let moveCount = 0;
+    let seconds = 0;
+    let timerInterval = null;  // Timer interval initialized to null
+
+    // Start the game and hide the intro page
+    function startGame() {
+        introPage.style.display = "none";
+        gamePage.style.display = "block";
+        size = 3;  // default size
+        unlockedLevels = 1;  // default unlocked levels
+        moveCount = 0;  // Reset move counter
+        seconds = 0;  // Reset timer
+        createTiles();
+        updateLevelOptions();
+        saveGameState();  // Save initial game state
+        startTimer();  // Start the timer
+    }
+
+    // Resume the game from local storage
+    function resumeGame() {
+        const savedGame = JSON.parse(localStorage.getItem("numpuzGame"));
+        if (savedGame) {
+            introPage.style.display = "none";
+            gamePage.style.display = "block";
+            tiles = savedGame.tiles;
+            size = savedGame.size;
+            unlockedLevels = savedGame.unlockedLevels;
+            moveCount = savedGame.moveCount;
+            seconds = savedGame.seconds;
+            createTiles();
+            updateLevelOptions();
+            renderGrid();
+            startTimer();  // Start the timer
+        } else {
+            alert("No saved game found!");
+        }
+    }
+
+    // Create tiles for the grid based on the current level size
+    function createTiles() {
+    tiles = [];
+    for (let i = 1; i < size * size; i++) {
+        tiles.push(i);
+    }
+    tiles.push(null); // Empty space for sliding
+    shuffleTiles(); // Shuffle the tiles at the start
+    grid.style.gridTemplateColumns = `repeat(${size}, 100px)`;
+    grid.style.gridTemplateRows = `repeat(${size}, 100px)`;
+    renderGrid();
+}
+
+
+    // Render the grid with the tiles
+    function renderGrid() {
+        grid.innerHTML = "";
+        tiles.forEach((num, index) => {
+            const tile = document.createElement("div");
+            tile.className = "tile";
+            if (num === null) {
+                tile.classList.add("empty");
+            } else {
+                tile.innerText = num;
+                tile.onclick = () => moveTile(index);
+            }
+            grid.appendChild(tile);
+        });
+    }
+
+    let isSoundMuted = false; // Track sound mute state
+    let isMusicMuted = false; // Track music mute state
+
+    // Handle the sliding of tiles
+    function moveTile(index) {
+        const emptyIndex = tiles.indexOf(null);
+        const row = Math.floor(index / size);
+        const col = index % size;
+        const emptyRow = Math.floor(emptyIndex / size);
+        const emptyCol = emptyIndex % size;
+
+        // Check if the move is in the same row or column and adjacent to the empty space
+        if ((row === emptyRow && Math.abs(col - emptyCol) === 1) || (col === emptyCol && Math.abs(row - emptyRow) === 1)) {
+            // Swap the tile with the empty space
+            [tiles[index], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[index]];
+
+            // Play the sliding sound if sound is not muted
+            if (!isSoundMuted) {
+                slideSound.currentTime = 0; // Ensure the sound plays from the start
+                slideSound.play();
+            }
+
+            renderGrid(); // Re-render the grid with new positions
+            moveCount++;
+            moveCounterDisplay.innerText = `Moves: ${moveCount}`;
+            checkWin();
+            saveGameState();
+        }
+    }
+
+    // Toggle sound mute
+    function toggleSound() {
+        isSoundMuted = !isSoundMuted;
+        const muteButton = document.getElementById('muteSoundButton');
+        muteButton.innerText = isSoundMuted ? 'Unmute Sound' : 'Mute Sound';
+    }
+
+    // Toggle music mute
+    function toggleMusic() {
+        isMusicMuted = !isMusicMuted;
+        const muteMusicButton = document.getElementById('muteMusicButton');
+        if (isMusicMuted) {
+            backgroundMusic.pause();
+        } else {
+            backgroundMusic.play();
+        }
+        muteMusicButton.innerText = isMusicMuted ? 'Unmute Music' : 'Mute Music';
+    }
+
+    // Function to play the click sound if not muted
+    function playClickSound() {
+        if (!isSoundMuted) {
+            const clickSound = document.getElementById("clickSound");
+            if (clickSound) {
+                clickSound.currentTime = 0; // Reset audio to start
+                clickSound.play();
+            }
+        }
+    }
+
+    // Increase difficulty for each level
+    function increaseDifficulty(level) {
+        switch (level) {
+            case 1: size = 3; break; // 3x3 grid for Level 1
+            case 2: size = 4; break; // 4x4 grid for Level 2
+            case 3: size = 5; break; // 5x5 grid for Level 3
+            case 4: size = 6; break; // 6x6 grid for Level 4
+            case 5: size = 7; break; // 7x7 grid for Level 5
+            case 6: size = 8; break; // 8x8 grid for Level 6
+            case 7: size = 9; break; // 9x9 grid for Level 7
+            case 8: size = 10; break; // 10x10 grid for Level 8
+            case 9: size = 11; break; // 11x11 grid for Level 9
+            case 10: size = 12; break; // 12x12 grid for Level 10
+            default: size = 3; // Default to 3x3
+        }
+        createTiles();
+    }
+
+    // Progress to the next level
+    function nextLevel() {
+        let currentLevel = parseInt(localStorage.getItem("currentLevel")) || 1;
+        let nextLevel = currentLevel + 1;
+
+        if (nextLevel <= 10) {
+            localStorage.setItem("currentLevel", nextLevel);
+            increaseDifficulty(nextLevel);
+        } else {
+            alert("Congratulations! You have completed all levels!");
+        }
+    }
+
+    // Check win condition and progress to next level
+    function checkWin() {
+        let isSolved = true;
+        for (let i = 0; i < tiles.length - 1; i++) {
+            if (tiles[i] !== i + 1) {
+                isSolved = false;
+                break;
+            }
+        }
+        if (isSolved) {
+            nextLevel();
+        }
+    }
+
+    // Attach event listeners to buttons
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelector("#startButton")?.addEventListener("click", playClickSound);
+        document.querySelector("#resumeButton")?.addEventListener("click", playClickSound);
+        document.querySelector("#muteSoundButton")?.addEventListener("click", () => {
+            playClickSound();
+            toggleSound();
+        });
+        document.querySelector("#muteMusicButton")?.addEventListener("click", () => {
+            playClickSound();
+            toggleMusic();
+        });
+        document.querySelector("#shuffleButton")?.addEventListener("click", playClickSound);
+        document.querySelector("#settingsIcon")?.addEventListener("click", playClickSound);
+        document.querySelector("#closeButton")?.addEventListener("click", playClickSound);
+    });
+
+    // Shuffle the tiles for a new game and reset timer & move count
+    function shuffleTiles() {
+        moveCount = 0;
+        moveCounterDisplay.innerText = `Moves: ${moveCount}`;
+        seconds = 0;
+        timerDisplay.innerText = "00:00";
+        if (timerInterval !== null) {
+            clearInterval(timerInterval);
+        }
+        startTimer();
+
+        for (let i = tiles.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+        }
+
+        renderGrid(); // Re-render the grid with shuffled tiles
+        saveGameState();
+    }
+
+    // Check if the puzzle is solved
+    // Check if the puzzle is solved
+    function checkWin() {
+        let isSolved = true;
+
+        for (let i = 0; i < tiles.length - 1; i++) {
+            if (tiles[i] !== i + 1) {
+                isSolved = false;
+                break;
+        }
+    }
+
+    if (isSolved) {
+        let currentLevel = parseInt(localStorage.getItem("currentLevel")) || 1;
+        let nextLevel = currentLevel + 1;
+
+        // Unlock the next level if it's within the limit
+        let lastCompletedLevel = parseInt(localStorage.getItem("lastCompletedLevel")) || 1;
+        if (nextLevel <= 10 && nextLevel > lastCompletedLevel) {
+            localStorage.setItem("lastCompletedLevel", nextLevel);
+        }
+
+        // Redirect to the "Congratulations" page with the next level in the URL
+        window.location.href = `congrats.html?nextLevel=${nextLevel}`;
+    }
+}
+
+    // Update the status of level options (locked or unlocked)
+    function updateLevelOptions() {
+        Array.from(levelSelect.options).forEach((option, index) => {
+            if (index < unlockedLevels) {
+                option.disabled = false;
+                option.classList.remove("locked");
+            } else {
+                option.disabled = true;
+                option.classList.add("locked");
+            }
+        });
+    }
+
+    // Change the level based on selection
+    function changeLevel() {
+        const selectedOption = levelSelect.options[levelSelect.selectedIndex];
+        if (selectedOption.dataset.locked === "true") {
+            alert("This level is locked! Complete the previous level to unlock it.");
+            return;
+        }
+        size = parseInt(selectedOption.value);
+        createTiles();
+        saveGameState();  // Save game state after changing level
+    }
+
+    // Start the timer
+    function startTimer() {
+        if (timerInterval !== null) {
+            clearInterval(timerInterval);
+        }
+
+        timerInterval = setInterval(() => {
+            seconds++;
+            const minutes = Math.floor(seconds / 60);
+            const secondsDisplay = seconds % 60;
+            timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${secondsDisplay.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    // Stop the timer
+    function stopTimer() {
+        clearInterval(timerInterval);
+    }
+
+    // Save the game state to local storage
+    function saveGameState() {
+        const gameState = {
+            tiles: tiles,
+            size: size,
+            unlockedLevels: unlockedLevels,
+            moveCount: moveCount,
+            seconds: seconds
+        };
+        localStorage.setItem("numpuzGame", JSON.stringify(gameState));
+    }
+
+    function getLevelFromURL() {
+    let params = new URLSearchParams(window.location.search);
+    return parseInt(params.get("level")) || 1; // डिफ़ॉल्ट लेवल 1 होगा
+}
+
+let currentLevel = getLevelFromURL();
+localStorage.setItem("currentLevel", currentLevel);
+
+// अब इस currentLevel का इस्तेमाल गेम लोड करने में करें
+console.log("Current Level:", currentLevel);
+
+
+    // Toggle background music
+    function toggleBackgroundMusic() {
+        if (backgroundMusic.paused) {
+            backgroundMusic.play();
+        } else {
+            backgroundMusic.pause();
+        }
+    }
+
+   // Toggle slide sound
+function toggleSlideSound() {
+    if (slideSound.volume === 1) {
+        slideSound.volume = 0; // Mute sound
+    } else {
+        slideSound.volume = 1; // Unmute sound
+    }
+}
+
+// Function to play the click sound
+function playClickSound() {
+    const clickSound = document.getElementById("clickSound");
+    if (clickSound) {
+        clickSound.currentTime = 0; // Reset audio to start
+        clickSound.play();
+    }
+}
+
+// Attach event listeners to buttons
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelector("#startButton")?.addEventListener("click", playClickSound);
+    document.querySelector("#resumeButton")?.addEventListener("click", playClickSound);
+    document.querySelector("#selectLevelButton")?.addEventListener("click", playClickSound);
+    document.querySelector("#muteMusicButton")?.addEventListener("click", playClickSound);
+    document.querySelector("#muteSoundButton")?.addEventListener("click", playClickSound);
+    document.querySelector("#shuffleButton")?.addEventListener("click", playClickSound);
+    document.querySelector("#settingsIcon")?.addEventListener("click", playClickSound); // Settings Icon
+    document.querySelector("#closeButton")?.addEventListener("click", playClickSound);   // Close Button
+});
+
+</script>
+
+</body>
+</html>
